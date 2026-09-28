@@ -1,0 +1,8 @@
+# Vzorové soubory pro testování importu
+#
+# Tato složka je pro git **ignorovaná** – vzorové doklady obsahují skutečné údaje
+# (odběratelé, částky, čísla účtů), které nepatří na veřejný internet.
+# V gitu zůstává jen tenhle soubor a README, aby bylo jasné, co sem patří.
+*
+!.gitignore
+!README.md

@@ -1,0 +1,12 @@
+# Aplikace FaktFree nemá server ani datové soubory – v gitu tedy stačí ignorovat
+# jen smetí z editoru a systému. Vzorky dokladů mají vlastní pravidla ve samples/.
+
+# Systémové a editorové smetí
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.tmp
+*.log
+.vscode/
+.idea/
