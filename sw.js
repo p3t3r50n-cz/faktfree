@@ -5,7 +5,7 @@
 
 // Technická verze cache – zvýšit při KAŽDÉ změně JS/CSS.
 // Držíme ji oddělenou od verze aplikace (ta je v `js/appinfo.js`, např. 0.1).
-const CACHE_VERSION = '0.1.11';
+const CACHE_VERSION = '0.1.14';
 
 // Cache je vázaná na cestu, ze které aplikace běží. Kdyby na stejném serveru
 // (stejný původ) běžely dvě kopie aplikace, např. /fa/ a /faktfree/,
@@ -17,6 +17,20 @@ const CACHE = PREFIX + CACHE_VERSION;
 
 // Staré názvy cache (před rebrandem) – po aktualizaci je uklidíme.
 const LEGACY = /^fakturace-v\d+$/;
+
+// Cache, které patří naší aplikaci, poznáme podle názvu `faktfree<klíč cesty>-<verze>`.
+// Uklízíme i cache z NADŘAZENÝCH cest: aplikace dřív běžela o úroveň výš (např.
+// /faktfree/ místo /faktfree/pwa/) a její service worker si stihl nacachovat
+// i soubory pod naší cestou. Taková cache se nikdy nesmaže (jiný prefix) a kvůli
+// `caches.match()` by měla vždy přednost před tou novou. Cache ze sourozenecké
+// cesty (např. /fa/) zůstávají – to je jiná kopie aplikace.
+const FAMILY = ['faktfree-'];
+for (let i = 1; i <= SCOPE_KEY.length; i++) {
+    if (i === SCOPE_KEY.length || SCOPE_KEY[i] === '_') {
+        FAMILY.push('faktfree' + SCOPE_KEY.slice(0, i) + '-');
+    }
+}
+const isOurs = (name) => FAMILY.some((prefix) => name.startsWith(prefix));
 
 const ASSETS = [
     './',
@@ -55,14 +69,25 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE).then((cache) => Promise.all(ASSETS.map((asset) =>
-            // `cache: 'reload'` = stáhni vždy ze sítě, ne z HTTP cache prohlížeče.
-            // Bez toho se mohla do nové cache dostat stará verze souboru (prohlížeč
-            // si ji drží podle Last-Modified) a po „Aktualizovat“ běžel pořád starý kód.
-            fetch(new Request(asset, { cache: 'reload' }))
-                .then((response) => (response && response.ok ? cache.put(asset, response) : null))
-                .catch(() => null)
-        ))).then(() => self.skipWaiting())
+        caches.open(CACHE).then((cache) => {
+            const failed = [];
+            return Promise.all(ASSETS.map((asset) =>
+                // `cache: 'reload'` = stáhni vždy ze sítě, ne z HTTP cache prohlížeče.
+                // Bez toho se mohla do nové cache dostat stará verze souboru (prohlížeč
+                // si ji drží podle Last-Modified) a po „Aktualizovat“ běžel pořád starý kód.
+                fetch(new Request(asset, { cache: 'reload' }))
+                    .then((response) => {
+                        if (!response || !response.ok) { failed.push(asset); return; }
+                        return cache.put(asset, response);
+                    })
+                    .catch(() => { failed.push(asset); })
+            )).then(() => {
+                // Chybějící soubor se doplní až za běhu ze sítě – ale znamená to,
+                // že se nová verze nenasazela celá.
+                if (failed.length) console.warn('Service worker: nenacacheováno:', failed);
+                return self.skipWaiting();
+            });
+        })
     );
 });
 
@@ -70,7 +95,7 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys()
             .then((keys) => Promise.all(keys
-                .filter((k) => (k.startsWith(PREFIX) || LEGACY.test(k)) && k !== CACHE)
+                .filter((k) => (isOurs(k) || LEGACY.test(k)) && k !== CACHE)
                 .map((k) => caches.delete(k))))
             .then(() => self.clients.claim())
     );
@@ -103,16 +128,21 @@ self.addEventListener('fetch', (event) => {
                     caches.open(CACHE).then((cache) => cache.put(request, copy));
                     return response;
                 })
-                .catch(() => caches.match('index.html'))
+                .catch(() => caches.match('index.html', { cacheName: CACHE }))
         );
         return;
     }
 
-    // ostatní: cache first, pak síť (a doplnit cache)
+    // ostatní: cache first, pak síť (a doplnit cache).
+    // Hledáme VÝHRADNĚ v naší cache: `caches.match()` bez omezení prochází všechny
+    // cache daného původu a vrátil by i soubor ze staré cache (např. z doby, kdy
+    // aplikace běžela o úroveň výš) – i když nová cache už má správnou verzi.
     event.respondWith(
-        caches.match(request).then((cached) => {
+        caches.match(request, { cacheName: CACHE }).then((cached) => {
             if (cached) return cached;
-            return fetch(request)
+            // `cache: 'reload'` i tady: kdyby soubor v cache chyběl, nesmíme si
+            // z HTTP cache prohlížeče přitáhnout starou verzi (a tu si pak uložit).
+            return fetch(request, { cache: 'reload' })
                 .then((response) => {
                     if (response && response.status === 200 && response.type === 'basic') {
                         const copy = response.clone();

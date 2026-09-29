@@ -3,7 +3,16 @@
 Verze se zvyšují po desetinách (0.1 → 0.2 → 0.3 …), viz [README](README.md#verze).
 U každé změny se zvyšuje i technická verze cache v `sw.js`.
 
-## Nepublikováno
+## 0.2 – 2026-09-29
+
+**Opravy**
+- offline cache: soubory se hledají **výhradně v aktuální cache**; dřív mohl `caches.match()`
+  vrátit soubor ze starší cache stejného původu a novou verzi „překrýt“
+- při aktivaci se uklízejí i cache z **nadřazených cest** a ruší se registrace
+  z nadřazeného scope (typicky z doby, kdy aplikace běžela na `/faktfree/` místo
+  `/faktfree/pwa/`) – taková cache se jinak nikdy nesmazala a zůstala v ní stará verze
+- ruční „Zkontrolovat aktualizace“ už nehlásí „máte nejnovější verzi“, když se nová
+  verze právě stahuje
 
 **Přehled faktur**
 - fulltextové hledání najde částku i bez oddělovače tisíců („16800" najde „16 800,00")

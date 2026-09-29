@@ -308,6 +308,14 @@ Bez toho si umí prohlížeč držet starý soubor ve své HTTP cache (server po
 `Last-Modified`/`ETag`) a do nové cache by se dostala stará verze – po „Aktualizovat“ by
 pořád běžel starý kód.
 
+Hledá se **výhradně pod aktuálním názvem** cache (`caches.match(request, { cacheName: CACHE })`).
+`caches.match()` bez omezení prochází všechny cache daného původu a mohl by vrátit soubor
+ze starší cache – např. po přesunu aplikace z `/faktfree/` na `/faktfree/pwa/` zůstane
+v prohlížeči cache `faktfree_faktfree-<verze>` a její obsah by měl vždy přednost.
+Při aktivaci se proto uklízejí i cache z **nadřazených** cest (sourozenecké cesty,
+např. druhá kopie na `/fa/`, zůstávají) a `js/app.js` navíc ruší registrace SW z nadřazeného
+scope, které se už nemají jak aktualizovat.
+
 ## Záloha dat
 
 Nastavení → *Záloha dat* → **Exportovat data** (JSON). Stejný soubor lze naimportovat

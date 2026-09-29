@@ -299,8 +299,30 @@ async function registerServiceWorker() {
         if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
         }
+        dropStaleRegistrations(swRegistration);
     } catch (err) {
         console.warn('Service worker se nepodařilo zaregistrovat:', err);
+    }
+}
+
+/**
+ * Úklid starých registrací. Aplikace dřív mohla běžet o úroveň výš (např. /faktfree/
+ * místo /faktfree/pwa/). Taková registrace má širší scope, její skript se přesunul
+ * (na původní adrese už je 404), takže se nikdy neaktualizuje – a její cache může
+ * pořád obsahovat staré soubory naší aplikace. Proto ji zrušíme.
+ */
+async function dropStaleRegistrations(mine) {
+    try {
+        const myScope = new URL(mine.scope);
+        for (const reg of await navigator.serviceWorker.getRegistrations()) {
+            if (reg.scope === mine.scope) continue;
+            const scope = new URL(reg.scope);
+            if (scope.origin === myScope.origin && myScope.pathname.startsWith(scope.pathname)) {
+                await reg.unregister();
+            }
+        }
+    } catch (err) {
+        console.warn('Staré registrace service workeru se nepodařilo uklidit:', err);
     }
 }
 
@@ -336,9 +358,32 @@ window.checkForUpdate = async () => {
         return;
     }
     try {
+        // Nestačí se jen zeptat a chvíli čekat: instalace nového service workeru
+        // (stažení všech souborů) může trvat déle a hlášení „máte nejnovější verzi“
+        // by pak bylo nepravdivé. Proto posloucháme, co se skutečně stane.
+        const update = new Promise((resolve) => {
+            const timer = setTimeout(() => resolve(false), 20000);
+            const done = (found) => { clearTimeout(timer); resolve(found); };
+            swRegistration.addEventListener('updatefound', () => {
+                const next = swRegistration.installing;
+                if (!next) { done(true); return; }
+                next.addEventListener('statechange', () => {
+                    if (next.state === 'installed' || next.state === 'activated') done(true);
+                });
+            }, { once: true });
+        });
+
         await swRegistration.update();
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        if (!updateOffered) toast('Máte nejnovější verzi.', 'ok');
+        const found = (await update) || !!swRegistration.waiting;
+
+        if (found) {
+            if (!updateOffered) {
+                showUpdateBar();
+                toast('Je dostupná nová verze aplikace.', 'ok');
+            }
+        } else if (!updateOffered) {
+            toast('Máte nejnovější verzi.', 'ok');
+        }
     } catch (err) {
         toast('Kontrolu aktualizací se nepodařilo provést.', 'err');
     }

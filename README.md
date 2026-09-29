@@ -155,7 +155,7 @@ vypsané v [THIRD-PARTY.md](THIRD-PARTY.md).
 
 ## Verze
 
-Aktuální verze je **0.1**. Každé další vydání zvyšuje desetinu: 0.2, 0.3, … až 1.0.
+Aktuální verze je **0.2**. Každé další vydání zvyšuje desetinu: 0.3, 0.4, … až 1.0.
 
 ## Poděkování
 
