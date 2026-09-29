@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------- */
 import * as store from '../store.js';
 import { esc, sv, fmtCZK, fmtDate, debounce } from '../util.js';
-import { confirmDialog, toast, alertDialog } from '../ui.js';
+import { confirmDialog, toast, alertDialog, openModal } from '../ui.js';
 import { allocatePayment } from '../dialogs.js';
 import { icon } from '../icons.js';
 
@@ -31,6 +31,8 @@ export function renderBank(host) {
     const f = store.state.bankFilters;
     const income = all.filter((p) => p.kind === 'invoice');
     const refunds = all.filter((p) => p.kind === 'refund');
+    const internals = all.filter((p) => p.kind === 'internal');
+    const interests = all.filter((p) => p.kind === 'interest');
     const unmatched = all.filter((p) => store.paymentState(p) === 'unmatched');
     const sum = (list) => list.reduce((s, p) => s + p.amount, 0);
     const matchedSum = all.reduce((s, p) => s + store.allocatedTotal(p), 0);
@@ -45,6 +47,8 @@ export function renderBank(host) {
         stat('Příchozích plateb', income.length + '×') +
         stat('Příjem na faktury', fmtCZK(sum(income)) + ' Kč') +
         stat('Vratky (mimo příjem)', refunds.length + '× · ' + fmtCZK(sum(refunds)) + ' Kč', refunds.length ? 'warn' : '') +
+        stat('Vlastní převody (mimo příjem)', internals.length + '× · ' + fmtCZK(sum(internals)) + ' Kč', internals.length ? 'warn' : '') +
+        stat('Úroky (mimo příjem)', interests.length + '× · ' + fmtCZK(sum(interests)) + ' Kč', interests.length ? 'warn' : '') +
         stat('Přiřazeno', fmtCZK(matchedSum) + ' Kč', 'ok') +
         stat('Nezaúčtováno', unmatched.length + '×', unmatched.length ? 'warn' : '') +
         '</div>' +
@@ -52,12 +56,12 @@ export function renderBank(host) {
         '<div class="filters card">' +
         '<label class="field"><span>Stav</span><select data-bank-filter="state">' +
         [['all', 'Vše'], ['unmatched', 'Nezaúčtováno (nespárováno)'], ['partial', 'Částečně spárováno'],
-            ['matched', 'Zaúčtováno (spárováno)'], ['refund', 'Vratky (mimo příjem)'], ['internal', 'Interní převody']]
+            ['matched', 'Zaúčtováno (spárováno)'], ['refund', 'Vratky (mimo příjem)'], ['internal', 'Vlastní převody'], ['interest', 'Úroky (mimo příjem)']]
             .map(([v, l]) => '<option value="' + v + '"' + (f.state === v ? ' selected' : '') + '>' + l + '</option>').join('') +
         '</select></label>' +
         '<label class="field grow"><span>Hledat</span><input type="search" data-bank-search value="' + esc(store.state.bankSearch) + '"' +
         ' placeholder="částka, VS, protiúčet, zpráva, číslo faktury…"></label>' +
-        '<label class="inline"><input type="checkbox" data-toggle="showInternal"' + (store.state.showInternal ? ' checked' : '') + '> Zobrazit i interní převody</label>' +
+        '<label class="inline"><input type="checkbox" data-toggle="showInternal"' + (store.state.showInternal ? ' checked' : '') + '> Zobrazit i vlastní převody</label>' +
         '<div class="filter-buttons"><button class="btn" data-action="clear-bank-filters">Zrušit filtry</button></div>' +
         '</div>' +
 
@@ -127,7 +131,7 @@ function paymentTable(list) {
             const label = pstate === 'refund'
                 ? 'Vratka' + (payment.refundName && payment.refundName !== 'Vratka' ? ' – ' + payment.refundName : '')
                 : store.PAYMENT_STATE_LABEL[pstate];
-            const badgeClass = { matched: 'paid', partial: 'partial', unmatched: 'overdue', refund: 'refund', internal: 'internal' }[pstate];
+            const badgeClass = { matched: 'paid', partial: 'partial', unmatched: 'overdue', refund: 'refund', internal: 'internal', interest: 'interest' }[pstate];
 
             const allocations = payment.allocations || [];
             const numbers = allocations.map((a) => {
@@ -141,7 +145,7 @@ function paymentTable(list) {
                   ' title="' + esc(title) + '">' + esc(label) + '</button>'
                 : '<span class="badge ' + badgeClass + '">' + esc(label) + '</span>';
 
-            // Akce držíme v pevných sloupcích (textová akce + 2 ikony), aby tlačítka
+            // Akce držíme v pevných sloupcích (textová akce + 3 ikony), aby tlačítka
             // v různých řádcích neujížděla – prázdný sloupec místo prostě zůstane prázdný.
             let mainAction = '';
             if (pstate === 'unmatched') {
@@ -161,6 +165,26 @@ function paymentTable(list) {
                 refundAction = '<button class="btn small ghost" data-action="unmark-refund" data-id="' + esc(payment.id) + '"' +
                     ' title="Není vratka – jde o běžný příjem">' + icon('x-lg') + '</button>';
             }
+
+            // Vlastní převod mezi účty (není zdanitelný příjem) – ruční označení.
+            let transferAction = '';
+            if (payment.kind === 'invoice') {
+                transferAction = '<button class="btn small ghost" data-action="mark-internal" data-id="' + esc(payment.id) + '"' +
+                    ' title="Označit jako vlastní převod mezi účty – není zdanitelný příjem">' + icon('arrow-left-right') + '</button>';
+            } else if (payment.kind === 'internal') {
+                transferAction = '<button class="btn small ghost" data-action="unmark-internal" data-id="' + esc(payment.id) + '"' +
+                    ' title="Není vlastní převod – jde o běžný příjem">' + icon('x-lg') + '</button>';
+            }
+
+            // Připsání úroků (úrok už zdanila banka) – není zdanitelný příjem.
+            let interestAction = '';
+            if (payment.kind === 'invoice') {
+                interestAction = '<button class="btn small ghost" data-action="mark-interest" data-id="' + esc(payment.id) + '"' +
+                    ' title="Označit jako připsání úroků (daní banka) – není zdanitelný příjem">' + icon('percent') + '</button>';
+            } else if (payment.kind === 'interest') {
+                interestAction = '<button class="btn small ghost" data-action="unmark-interest" data-id="' + esc(payment.id) + '"' +
+                    ' title="Není úrok – jde o běžný příjem">' + icon('x-lg') + '</button>';
+            }
             const deleteAction = '<button class="btn small danger ghost" data-action="delete-payment" data-id="' + esc(payment.id) + '" title="Smazat platbu">' + icon('x-lg') + '</button>';
 
             return '<tr>' +
@@ -173,13 +197,75 @@ function paymentTable(list) {
                 '<td>' + badge + '</td>' +
                 '<td class="row-actions">' +
                 '<span class="act act-label">' + mainAction + '</span>' +
+                '<span class="act act-icon">' + transferAction + '</span>' +
                 '<span class="act act-icon">' + refundAction + '</span>' +
+                '<span class="act act-icon">' + interestAction + '</span>' +
                 '<span class="act act-icon">' + deleteAction + '</span>' +
                 '</td></tr>';
         }).join('') + '</tbody></table></div>';
 }
 
 /* --------------------------- obsluha ------------------------------------ */
+
+/** Druhy plateb „mimo zdanitelný příjem" a jejich texty v dialogu. */
+const MARK_KINDS = {
+    refund: { title: 'Označit jako vratku?', ok: 'Označit jako vratku', noun: 'vratka' },
+    internal: { title: 'Označit jako vlastní převod?', ok: 'Označit jako vlastní převod', noun: 'vlastní převod' },
+    interest: { title: 'Označit jako připsání úroků?', ok: 'Označit jako úrok', noun: 'úrok' },
+};
+
+/**
+ * Dialog pro označení platby jako vratka / vlastní převod / úrok. Pokud existují další
+ * nespárované platby ze stejného účtu, nabídne (předzaškrtnuté) i jejich hromadné
+ * označení stejným způsobem. Vrací `{ all }` (all = označit i ostatní) nebo `null`.
+ */
+async function markKindDialog(payment, kind) {
+    const meta = MARK_KINDS[kind];
+    const accLabel = sv(payment.contraAccount) + '/' + sv(payment.contraBank);
+    const hasAllocations = (payment.allocations || []).length > 0;
+    const others = store.unmatchedSameAccount(payment);
+
+    let bodyHtml = '<p class="muted">Platba ' + esc(fmtCZK(payment.amount)) + ' Kč se přestane počítat jako zdanitelný příjem' +
+        (hasAllocations ? ' a její vazba na fakturu se zruší' : '') + '.</p>';
+    if (kind === 'refund') {
+        bodyHtml += '<p class="muted">Účet ' + esc(accLabel) + ' si zapamatujeme, takže další vratky z něj poznáme samy.</p>';
+    } else if (kind === 'interest') {
+        bodyHtml += '<p class="muted">Úrok už zdanila banka (srážková daň), proto se do příjmů nepočítá.</p>';
+    }
+    if (others.length) {
+        const sum = others.reduce((s, p) => s + p.amount, 0);
+        bodyHtml += '<label class="inline" style="margin-top:10px"><input type="checkbox" data-bulk checked> ' +
+            'Označit stejně i ' + others.length + ' nespárovaných plateb z účtu ' + esc(accLabel) +
+            ' (' + esc(fmtCZK(sum)) + ' Kč)</label>';
+    }
+
+    const { promise, body } = openModal({
+        title: meta.title,
+        bodyHtml,
+        buttons: [
+            { label: 'Zrušit', value: null },
+            { label: meta.ok, variant: 'primary', value: 'ok' },
+        ],
+    });
+    if ((await promise) !== 'ok') return null;
+    const checkbox = body.querySelector('[data-bulk]');
+    return { all: !!(checkbox && checkbox.checked) };
+}
+
+/** Označí platbu (a volitelně všechny nespárované ze stejného účtu) daným druhem. */
+async function markKind(payment, kind) {
+    const choice = await markKindDialog(payment, kind);
+    if (!choice) return;
+    const ids = [payment.id];
+    if (choice.all) ids.push(...store.unmatchedSameAccount(payment).map((p) => p.id));
+    // Ať označené platby v seznamu nezmizí (vlastní převody jsou ve výchozím stavu skryté).
+    if (kind === 'internal') store.state.showInternal = true;
+    await store.setPaymentsKind(ids, kind);
+    const noun = MARK_KINDS[kind].noun;
+    toast(ids.length > 1
+        ? 'Označeno jako ' + noun + ' – ' + ids.length + ' plateb (mimo zdanitelný příjem).'
+        : 'Označeno jako ' + noun + ' (mimo zdanitelný příjem).', 'ok');
+}
 
 export function bindBank(host) {
     if (host.dataset.bankBound) return;
@@ -268,29 +354,20 @@ export function bindBank(host) {
             return;
         }
 
-        if (action === 'mark-refund') {
+        if (action === 'mark-refund' || action === 'mark-internal' || action === 'mark-interest') {
             const payment = store.state.payments.find((p) => p.id === el.dataset.id);
             if (!payment) return;
-            const hasAllocations = (payment.allocations || []).length > 0;
-            if (await confirmDialog({
-                title: 'Označit jako vratku?',
-                body: 'Platba ' + fmtCZK(payment.amount) + ' Kč se přestane počítat jako zdanitelný příjem' +
-                    (hasAllocations ? ' a její vazba na fakturu se zruší' : '') +
-                    '. Účet ' + sv(payment.contraAccount) + '/' + sv(payment.contraBank) + ' si zapamatujeme, ' +
-                    'takže další vratky z něj poznáme samy.',
-                okLabel: 'Označit jako vratku',
-            })) {
-                await store.setPaymentRefund(payment.id, true);
-                toast('Označeno jako vratka (mimo zdanitelný příjem).', 'ok');
-            }
+            await markKind(payment, action.slice(5)); // 'refund' | 'internal' | 'interest'
             return;
         }
 
-        if (action === 'unmark-refund') {
+        if (action === 'unmark-refund' || action === 'unmark-internal' || action === 'unmark-interest') {
             const payment = store.state.payments.find((p) => p.id === el.dataset.id);
             if (!payment) return;
-            await store.setPaymentRefund(payment.id, false);
-            toast('Označení vratky zrušeno – platba se počítá jako příjem.', 'ok');
+            const kind = action.slice(7); // 'refund' | 'internal' | 'interest'
+            await store.setPaymentsKind([payment.id], 'invoice');
+            toast('Označení ' + (kind === 'refund' ? 'vratky' : kind === 'internal' ? 'vlastního převodu' : 'úroku') +
+                ' zrušeno – platba se počítá jako příjem.', 'ok');
             return;
         }
 

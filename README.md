@@ -124,6 +124,7 @@ to, co se nasazuje.
 | `css/`, `js/`, `icons/` | vzhled, logika (ES moduly) a ikony |
 | `brand/` | Logo a pravidla jeho použití. |
 | `docs/` | Screenshoty použité v tomto README. |
+| `web/` | Jednostránkový rozcestník pro `palacky.net/faktfree` – nahrává se **nad** aplikaci (aplikace pak bydlí v podsložce `pwa/`). |
 | `samples/` | Návod, jak si připravit vzorky na testování importu. **Skutečné doklady tu nejsou** – obsahovaly by reálné údaje. |
 | `CHANGELOG.md` | Historie změn po verzích. |
 | `DEVELOPMENT.md` | Technické detaily, konvence a poznámky k vývoji. |

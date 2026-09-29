@@ -14,7 +14,7 @@ export const APP_NAME = 'FaktFree';
  * Verze aplikace. Při dalším vydání vždy +0,1 (0.1 → 0.2 → … → 1.0).
  * Technická verze cache v `sw.js` je od téhle oddělená (mění se při každé úpravě souborů).
  */
-export const APP_VERSION = '0.1';
+export const APP_VERSION = '0.2';
 
 /** Domovská adresa projektu (text/odkaz, ne adresa, ze které se aplikace načítá). */
 export const APP_URL = 'https://palacky.net/faktfree';

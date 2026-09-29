@@ -236,16 +236,31 @@ export function manageUnits() {
 export function allocatePayment(payment) {
     const invoices = store.invoicesForPayment(payment);
 
-    function options(selectedId) {
-        return '<option value="">-- nezařazeno --</option>' + invoices.map((inv) => {
-            const remaining = store.remainingOf(inv);
-            const label = sv(inv.number) + ' · ' + sv(inv.customerSnapshot && inv.customerSnapshot.name) +
-                ' · zbývá ' + fmtCZK(remaining) + ' Kč';
-            return '<option value="' + esc(inv.id) + '"' + (selectedId === inv.id ? ' selected' : '') + '>' + esc(label) + '</option>';
-        }).join('');
+    const free = store.freeAmount(payment);
+    // Nejlepší tip: nezaplacená faktura, jejíž zbývající částka přesně sedí na volnou
+    // částku platby (pomůže, když platba přišla se špatným VS).
+    const suggested = free > 0.005
+        ? invoices.find((inv) => Math.abs(store.remainingOf(inv) - free) <= 0.005) || null
+        : null;
+
+    function optionHtml(inv, selectedId) {
+        const remaining = store.remainingOf(inv);
+        const isSuggestion = !!suggested && inv.id === suggested.id;
+        const label = sv(inv.number) + ' · ' + sv(inv.customerSnapshot && inv.customerSnapshot.name) +
+            ' · zbývá ' + fmtCZK(remaining) + ' Kč';
+        // Nezaplacené podbarvíme barvou z tématu, tip na spárování zvýrazníme tučně.
+        const color = isSuggestion ? 'var(--success)' : (remaining > 0.005 ? 'var(--danger)' : 'var(--muted)');
+        return '<option value="' + esc(inv.id) + '" style="color:' + color + (isSuggestion ? ';font-weight:600' : '') + '"' +
+            (selectedId === inv.id ? ' selected' : '') + '>' + esc((isSuggestion ? '★ ' : '') + label) + '</option>';
     }
 
-    const free = store.freeAmount(payment);
+    function options(selectedId) {
+        const unpaid = invoices.filter((inv) => store.remainingOf(inv) > 0.005);
+        const paid = invoices.filter((inv) => store.remainingOf(inv) <= 0.005);
+        return '<option value="">-- nezařazeno --</option>' +
+            (unpaid.length ? '<optgroup label="Nezaplacené">' + unpaid.map((inv) => optionHtml(inv, selectedId)).join('') + '</optgroup>' : '') +
+            (paid.length ? '<optgroup label="Zaplacené">' + paid.map((inv) => optionHtml(inv, selectedId)).join('') + '</optgroup>' : '');
+    }
 
     return openModal({
         title: 'Párování platby',
@@ -262,10 +277,14 @@ export function allocatePayment(payment) {
             '<p class="muted small">' + esc(payment.message) + '</p>' +
             '<div data-allocs></div>' +
             '<div class="dialog-toolbar" style="margin-top:14px;align-items:flex-end;gap:10px">' +
-            '<label class="field" style="flex:2"><span>Faktura</span><select data-invoice>' + options(null) + '</select></label>' +
+            '<label class="field" style="flex:2"><span>Faktura</span><select data-invoice>' + options(suggested ? suggested.id : null) + '</select></label>' +
             '<label class="field" style="flex:1"><span>Částka (Kč)</span><input type="number" step="0.01" min="0" data-amount value="' + (free > 0 ? free.toFixed(2) : '0.00') + '"></label>' +
             '<button class="btn primary" data-assign>Přiřadit</button>' +
-            '</div>',
+            '</div>' +
+            '<p class="muted small" style="margin-top:8px">' +
+            (suggested ? 'Tip: volné částce ' + fmtCZK(free) + ' Kč odpovídá <strong>' + esc(sv(suggested.number)) + '</strong> (★). ' : '') +
+            'Nezaplacené faktury jsou v nabídce barevně odlišeny.' +
+            '</p>',
         onMount: ({ body }) => {
             const allocs = body.querySelector('[data-allocs]');
 

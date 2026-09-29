@@ -418,6 +418,7 @@ tbody tr:hover { background: var(--panel-2); }
 .badge.warn { background: var(--warn); color: #fff; margin-left: 6px; }
 .badge.refund { background: color-mix(in srgb, var(--warn) 28%, transparent); color: var(--text); }
 .badge.internal { background: var(--panel-3); color: var(--muted); }
+.badge.interest { background: color-mix(in srgb, var(--success) 24%, transparent); color: var(--text); }
 .badge-link { border: 0; cursor: pointer; font: inherit; }
 .badge-link:hover { text-decoration: underline; }
 

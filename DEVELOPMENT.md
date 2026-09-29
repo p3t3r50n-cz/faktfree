@@ -105,7 +105,9 @@ Pořadí se resetuje každý rok a drží se zvlášť pro každou firmu.
 - **Idempotence** – opakovaný import téhož výpisu nic nezduplikuje (otisk položky;
   rozpozná se i otisk z dřívější verze, kde bylo VS ještě s nulami zleva).
 - **Automatické párování** – přesná shoda VS + celé částky.
-- **Ruční párování** – i částečné úhrady (jedna faktura = více plateb).
+- **Ruční párování** – i částečné úhrady (jedna faktura = více plateb). V dialogu jsou
+  nezaplacené faktury seskupené a barevně odlišené a předvyplní se tip na fakturu, jejíž
+  zbývající částka odpovídá volné částce platby (pomůže při špatném VS).
 - **Filtr stavu a fulltext** – hledá v částce, VS, protiúčtu, zprávě i v čísle faktury,
   ke které je platba přiřazená. Odznak u spárované platby je **odkaz na fakturu**
   (v tooltipu má její číslo).
@@ -116,7 +118,14 @@ Pořadí se resetuje každý rok a drží se zvlášť pro každou firmu.
   (pojistné, daň) se označí jako **vratka**, nepočítají se do příjmů a mají vlastní
   souhrn. Účet se do seznamu přidá sám tlačítkem ↰ u platby; účet se takto
   „naučí“ a další vratky z něj aplikace pozná.
-- Převody mezi vlastními účty se rozpoznají jako *interní* a nepárují se.
+- **Vlastní převody (mimo zdanitelný příjem)** – převody mezi vlastními účty se při
+  importu rozpoznají samy podle účtů firem; platbu lze takto označit i **ručně**
+  tlačítkem ⇄ v přehledu plateb (a zase zrušit). Nepočítají se do příjmů a nepárují se.
+- **Připsání úroků (mimo zdanitelný příjem)** – úrok už zdanila banka (srážková daň),
+  proto se do příjmů nepočítá; platbu označíte tlačítkem % v přehledu plateb.
+- **Hromadné označení (vratka, vlastní převod i úrok)** – dialog u označení nabídne
+  (předzaškrtnuté) označit stejným způsobem i všechny ostatní **nespárované** platby
+  ze stejného účtu.
 
 ## Import faktur z jiných systémů
 

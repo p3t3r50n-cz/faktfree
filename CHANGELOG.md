@@ -3,6 +3,22 @@
 Verze se zvyšují po desetinách (0.1 → 0.2 → 0.3 …), viz [README](README.md#verze).
 U každé změny se zvyšuje i technická verze cache v `sw.js`.
 
+## Nepublikováno
+
+**Přehled faktur**
+- fulltextové hledání najde částku i bez oddělovače tisíců („16800" najde „16 800,00")
+
+**Banka**
+- platbu lze ručně označit jako **vlastní převod** mezi vlastními účty (mimo zdanitelný
+  příjem) – nové tlačítko ⇄ v přehledu plateb; dosud se vlastní převody rozpoznávaly
+  jen automaticky podle účtů firem
+- u označení vratky i vlastního převodu dialog nabídne hromadné označení i všech
+  ostatních nespárovaných plateb ze stejného účtu
+- nový stav **připsání úroků** (mimo zdanitelný příjem – úrok daní banka), tlačítko %
+  v přehledu plateb
+- dialog ručního párování: nezaplacené faktury seskupené a barevně odlišené, tip na
+  fakturu odpovídající částkou (★) se předvyplní
+
 ## 0.1 – 2026-09-28
 
 První veřejné vydání. Aplikace umí fakturaci od začátku do konce – vystavit doklad,

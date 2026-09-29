@@ -87,7 +87,9 @@ export function renderSidebar() {
 }
 
 
+/** Platby, které ještě čekají na spárování (vratky, převody a úroky se nepárují). */
 function unmatchedCount() {
     return store.companyPayments().filter((p) =>
-        p.kind !== 'internal' && p.kind !== 'manual' && store.freeAmount(p) > 0.005).length;
+        p.kind !== 'internal' && p.kind !== 'manual' && p.kind !== 'refund' && p.kind !== 'interest' &&
+        store.freeAmount(p) > 0.005).length;
 }

@@ -612,6 +612,7 @@ export const freeAmount = (payment) => Math.round((payment.amount - allocatedTot
 export function paymentState(payment) {
     if (payment.kind === 'internal') return 'internal';
     if (payment.kind === 'refund') return 'refund';
+    if (payment.kind === 'interest') return 'interest';
     if (payment.kind === 'manual') return 'matched';
     if (freeAmount(payment) <= 0.005) return 'matched';
     return allocatedTotal(payment) > 0 ? 'partial' : 'unmatched';
@@ -619,7 +620,7 @@ export function paymentState(payment) {
 
 export const PAYMENT_STATE_LABEL = {
     matched: 'Zaúčtováno', partial: 'Částečně', unmatched: 'Nezaúčtováno',
-    refund: 'Vratka', internal: 'Interní převod',
+    refund: 'Vratka', internal: 'Vlastní převod', interest: 'Úrok',
 };
 
 /**
@@ -668,23 +669,57 @@ export async function saveRefundAccounts(list) {
     emit('sidebar');
 }
 
-/** Přepne platbu na vratku (a účet si zapamatuje) nebo zpět na běžný příjem. */
-export async function setPaymentRefund(paymentId, isRefund) {
-    const payment = state.payments.find((p) => p.id === paymentId);
-    if (!payment) return;
-    if (isRefund) {
-        const known = refundAccountFor(payment);
-        payment.kind = 'refund';
-        payment.refundName = known ? known.name : 'Vratka';
-        payment.allocations = [];
-        await addRefundAccount(payment.contraAccount, payment.contraBank, payment.refundName);
-    } else {
-        payment.kind = 'invoice';
-        delete payment.refundName;
+/**
+ * Nespárované (dosud nikam nepřiřazené) příchozí platby ze stejného protiúčtu jako
+ * daná platba – používá se pro hromadné označení vratky / vlastního převodu.
+ */
+export function unmatchedSameAccount(payment) {
+    const account = normAccount(payment.contraAccount);
+    const bank = digitsOnly(payment.contraBank);
+    return state.payments.filter((p) =>
+        p.id !== payment.id &&
+        p.kind === 'invoice' &&
+        paymentState(p) === 'unmatched' &&
+        normAccount(p.contraAccount) === account &&
+        (!bank || digitsOnly(p.contraBank) === bank));
+}
+
+/**
+ * Přepne platbu (nebo více plateb) na daný druh: `'refund'` (vratka), `'internal'`
+ * (vlastní převod), `'interest'` (připsání úroků) nebo `'invoice'` (běžný příjem).
+ * U vratky si navíc zapamatuje účet pro budoucí importy. Uloží najednou a překreslí jen jednou.
+ */
+export async function setPaymentsKind(ids, kind) {
+    const list = Array.isArray(ids) ? ids : [ids];
+    for (const id of list) {
+        const payment = state.payments.find((p) => p.id === id);
+        if (!payment) continue;
+        if (kind === 'refund') {
+            const known = refundAccountFor(payment);
+            payment.kind = 'refund';
+            payment.refundName = known ? known.name : 'Vratka';
+            payment.allocations = [];
+            await addRefundAccount(payment.contraAccount, payment.contraBank, payment.refundName);
+        } else if (kind === 'internal' || kind === 'interest') {
+            payment.kind = kind;
+            delete payment.refundName;
+            payment.allocations = [];
+        } else {
+            payment.kind = 'invoice';
+            delete payment.refundName;
+        }
+        await db.put('payments', payment);
     }
-    await db.put('payments', payment);
     emit('all');
 }
+
+/** Přepne platbu na vratku (a účet si zapamatuje) nebo zpět na běžný příjem. */
+export const setPaymentRefund = (paymentId, isRefund) =>
+    setPaymentsKind([paymentId], isRefund ? 'refund' : 'invoice');
+
+/** Přepne platbu na vlastní převod (převod mezi vlastními účty) nebo zpět na běžný příjem. */
+export const setPaymentInternal = (paymentId, isInternal) =>
+    setPaymentsKind([paymentId], isInternal ? 'internal' : 'invoice');
 
 export function invoicesForPayment(payment) {
     const companyId = payment.companyId;

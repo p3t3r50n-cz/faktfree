@@ -28,11 +28,16 @@ function matches(invoice, filters, search) {
     if (search) {
         const q = search.toLowerCase();
         const customer = sv(invoice.customerSnapshot && invoice.customerSnapshot.name);
-        if (!(sv(invoice.number).toLowerCase().includes(q) ||
-            customer.toLowerCase().includes(q) ||
-            fmtCZK(invoiceTotals(invoice).payable).includes(q) ||
-            sv(invoice.issueDate).includes(q) ||
-            sv(invoice.note).toLowerCase().includes(q))) return false;
+        const payable = invoiceTotals(invoice).payable;
+        const haystack = [
+            sv(invoice.number), customer,
+            fmtCZK(payable), String(payable),
+            sv(invoice.issueDate), sv(invoice.note),
+        ].join(' ').toLowerCase();
+        // Toleruje i jiný zápis čísla: „16800" najde „16 800,00" (tisíce odděluje
+        // pevná mezera), „16 800" i „16800,00" samozřejmě taky.
+        const compact = (s) => s.replace(/[\s\u00a0]/g, '');
+        if (!haystack.includes(q) && !compact(haystack).includes(compact(q))) return false;
     }
     return true;
 }

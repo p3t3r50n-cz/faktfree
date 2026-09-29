@@ -5,7 +5,7 @@
 
 // Technická verze cache – zvýšit při KAŽDÉ změně JS/CSS.
 // Držíme ji oddělenou od verze aplikace (ta je v `js/appinfo.js`, např. 0.1).
-const CACHE_VERSION = '0.1.6';
+const CACHE_VERSION = '0.1.11';
 
 // Cache je vázaná na cestu, ze které aplikace běží. Kdyby na stejném serveru
 // (stejný původ) běžely dvě kopie aplikace, např. /fa/ a /faktfree/,
