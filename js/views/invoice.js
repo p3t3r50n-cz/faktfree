@@ -128,7 +128,7 @@ function rowHtml(row, i, platce, units) {
         unitList.map((u) => '<option' + (sv(row.unit) === u ? ' selected' : '') + '>' + esc(u) + '</option>').join('') +
         '</select></td>' +
         '<td><input type="number" step="0.01" min="0" data-row="' + i + '" data-col="price" value="' + esc(row.price) + '" style="min-width:100px"></td>' +
-        '<td><input type="number" step="0.01" min="0" data-row="' + i + '" data-col="quantity" value="' + esc(row.quantity) + '" style="min-width:90px"></td>' +
+        '<td><input type="text" inputmode="text" data-row="' + i + '" data-col="quantity" value="' + esc(row.quantity) + '" style="min-width:90px"></td>' +
         '<td><input type="number" step="1" min="0" max="100" data-row="' + i + '" data-col="discount" value="' + esc(row.discount) + '" style="min-width:80px"></td>' +
         (platce ? '<td><select data-row="' + i + '" data-col="vat" style="min-width:90px">' +
             VAT_RATES.map((r) => '<option value="' + r + '"' + (num(row.vat) === r ? ' selected' : '') + '>' + r + ' %</option>').join('') +

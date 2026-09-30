@@ -8,14 +8,28 @@ export const DEFAULT_UNITS = ['ks', 'hod', 'den', 'měsíc', 'km', 'paušál', '
 
 /* --------------------------- částky a DPH -------------------------------- */
 
+function isHourUnit(unit) {
+    return ['h', 'hod', 'hodin', 'hour', 'hours'].includes(sv(unit).trim().toLowerCase());
+}
+
+export function quantityOf(row) {
+    const value = sv(row && row.quantity).trim();
+    if (isHourUnit(row && row.unit) && value.includes(':')) {
+        const match = value.match(/^(\d+):([0-5]\d)$/);
+        return match ? Number(match[1]) + Number(match[2]) / 60 : 0;
+    }
+    return num(value);
+}
+
 export function rowBase(row) {
-    return r2(num(row.price) * num(row.quantity) * (1 - num(row.discount) / 100));
+    return r2(num(row.price) * quantityOf(row) * (1 - num(row.discount) / 100));
 }
 export function rowVat(row) {
     return r2(rowBase(row) * num(row.vat) / 100);
 }
 export function rowTotal(row) {
-    return r2(rowBase(row) + rowVat(row));
+    const total = r2(rowBase(row) + rowVat(row));
+    return isHourUnit(row && row.unit) ? Math.round(total) : total;
 }
 
 /**
@@ -25,15 +39,16 @@ export function rowTotal(row) {
  */
 export function totals(rows, rounding) {
     let base = 0, vat = 0;
+    let total = 0;
     const byRate = { 0: 0, 12: 0, 21: 0 };
     for (const row of rows || []) {
         const b = rowBase(row);
         const v = rowVat(row);
-        base += b; vat += v;
+        base += b; vat += v; total += rowTotal(row);
         const rate = num(row.vat) || 0;
         byRate[rate] = (byRate[rate] || 0) + v;
     }
-    const total = r2(base + vat);
+    total = r2(total);
     const payable = rounding ? Math.round(total) : total;
     return {
         base: r2(base), vat: r2(vat), byRate,
