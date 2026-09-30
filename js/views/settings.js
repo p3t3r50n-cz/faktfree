@@ -6,6 +6,7 @@ import * as db from '../db.js';
 import { esc, sv, num, debounce, todayStr } from '../util.js';
 import { confirmDialog, toast, openModal } from '../ui.js';
 import { buildDemoAbo } from '../demo-abo.js';
+import { downloadBackup, backupText, backupWarnDays, backupStale } from '../backup.js';
 import { allThemes, THEME_DEFAULTS, normalizeTheme, resolveTheme } from '../themes.js';
 import { icon } from '../icons.js';
 import { APP_NAME, APP_URL, APP_VERSION, APP_AUTHOR, APP_AUTHOR_URL, APP_LICENSE, APP_YEAR } from '../appinfo.js';
@@ -63,6 +64,14 @@ export function renderSettings(host) {
         '<div class="dialog-toolbar">' +
         '<button class="btn primary" data-action="export-json">' + icon('download') + ' Exportovat data</button>' +
         '<button class="btn" data-action="import-json">' + icon('upload') + ' Importovat data</button>' +
+        '</div>' +
+        '<p class="muted small backup-state' + (backupStale() ? ' stale' : '') + '" style="margin-top:10px">' +
+        esc(backupText()) + '</p>' +
+        '<div class="grid2" style="align-items:end">' +
+        '<label class="field"><span>Připomínat po dnech bez zálohy</span>' +
+        '<input type="number" min="1" max="90" step="1" data-setting="backupWarnDays" value="' + esc(backupWarnDays()) + '"></label>' +
+        '<label class="inline checkbox-field"><input type="checkbox" data-setting="warnOnClose"' +
+        (store.state.settings.warnOnClose === false ? '' : ' checked') + '> Připomenout při zavírání aplikace</label>' +
         '</div>' +
         '<div class="storage-info" data-storage></div>' +
         '</div>' +
@@ -271,6 +280,11 @@ export function bindSettings(host) {
             company.platceDPH = e.target.checked;
             save();
         }
+        // obecné nastavení aplikace (připomínka zálohy)
+        const setting = e.target.dataset.setting;
+        if (!setting) return;
+        if (e.target.type === 'checkbox') store.setSetting(setting, e.target.checked);
+        else store.setSetting(setting, e.target.value.trim() === '' ? '' : num(e.target.value));
     });
 
     host.addEventListener('click', async (e) => {
@@ -377,14 +391,7 @@ export function bindSettings(host) {
         }
 
         if (action === 'export-json') {
-            const data = await store.exportData();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'fakturace-zaloha-' + todayStr() + '.json';
-            a.click();
-            URL.revokeObjectURL(a.href);
-            toast('Záloha stažena.', 'ok');
+            await downloadBackup();
             return;
         }
 

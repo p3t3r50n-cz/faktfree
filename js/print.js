@@ -133,6 +133,16 @@ export function invoiceHtml(invoice, company, paid) {
         '</div>';
 }
 
+/**
+ * Název souboru pro „Uložit jako PDF“. Prohlížeč ho předvyplní z `document.title`
+ * a jinak nastavit nelze, proto titulek na dobu tisku přepneme na číslo faktury.
+ */
+function printTitle(invoice) {
+    const number = sv(invoice.number) || sv(invoice.numberDraft);
+    // znaky, které v názvu souboru nejdou (diakritiku naopak necháváme)
+    return number.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').trim() || APP_NAME;
+}
+
 /** Vykreslí fakturu do tiskové vrstvy a spustí tisk. */
 export function printInvoice(invoice, company, paid) {
     let host = document.getElementById('print-area');
@@ -143,10 +153,23 @@ export function printInvoice(invoice, company, paid) {
     }
     host.innerHTML = invoiceHtml(invoice, company, paid);
     document.body.classList.add('printing');
+
+    // Titulek stránky určuje název souboru v tiskovém dialogu.
+    const prevTitle = document.title;
+    document.title = printTitle(invoice);
+
+    let restored = false;
     const cleanup = () => {
+        if (restored) return;
+        restored = true;
         document.body.classList.remove('printing');
+        document.title = prevTitle;
         window.removeEventListener('afterprint', cleanup);
+        window.removeEventListener('focus', cleanup);
     };
+    // `afterprint` stačí v Chromiu/Firefoxu; `focus` je pojistka pro prohlížeče,
+    // kde se titulek po zavření dialogu musí vrátit ručně.
     window.addEventListener('afterprint', cleanup);
+    window.addEventListener('focus', cleanup);
     setTimeout(() => window.print(), 60);
 }

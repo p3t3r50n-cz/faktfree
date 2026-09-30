@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 64 64"
+   width="64"
+   height="64"
+   role="img"
+   aria-label="FaktFree"
+   version="1.1"
+   id="svg13"
+   sodipodi:docname="logo-mark-color.svg"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs17">
+    <linearGradient
+       id="linearGradient364"
+       inkscape:swatch="gradient">
+      <stop
+         style="stop-color:#2563eb;stop-opacity:1"
+         offset="0"
+         id="stop360" />
+      <stop
+         style="stop-color:#3b82f6;stop-opacity:1"
+         offset="1"
+         id="stop362" />
+    </linearGradient>
+    <!-- Směr přechodu: zleva dole → vpravo nahoru (rohy účtenky 18,56 → 46,8). -->
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient364"
+       id="linearGradient366"
+       x1="18"
+       y1="56"
+       x2="46"
+       y2="8"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <sodipodi:namedview
+     id="namedview15"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="7.375"
+     inkscape:cx="34.372881"
+     inkscape:cy="33.220339"
+     inkscape:window-width="1536"
+     inkscape:window-height="900"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg13" />
+  <title
+     id="title2">FaktFree</title>
+  <!--
+      BAREVNÁ značka: účtenka s trhaným okrajem v modré aplikace a bílá fajfka.
+      Barvy jsou pevné (ne `currentColor`), takže se nikde nemění.
+
+      Stejné tvary i stejné proporce jako `logo-mark.svg` (jednobarevná
+      varianta) – liší se jen barvou. Slouží i jako předloha pro ikony
+      aplikace, viz `brand/README.md`.
+    -->
+  <g
+     id="g3682">
+    <path
+       d="m 18,8 h 28 a 3,3 0 0 1 3,3 v 39 l -5.667,6 -5.667,-6 -5.667,6 -5.667,-6 -5.667,6 -5.667,-6 V 11 a 3,3 0 0 1 3,-3 z"
+       fill="url(#linearGradient366)"
+       mask="none"
+       id="path11" />
+    <path
+       d="m 23.5,29 6,6 12,-13"
+       fill="none"
+       stroke="#ffffff"
+       stroke-width="5.5"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       id="path8" />
+  </g>
+</svg>

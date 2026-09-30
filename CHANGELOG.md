@@ -3,6 +3,29 @@
 Verze se zvyšují po desetinách (0.1 → 0.2 → 0.3 …), viz [README](README.md#verze).
 U každé změny se zvyšuje i technická verze cache v `sw.js`.
 
+## 0.3 - 2026-09-30
+
+**Připomínka zálohy**
+- dokud je záloha čerstvá, nic se nepřipomíná; po 7 dnech (nastavitelné 1–90) se
+  v patičce levého panelu objeví drobný řádek „Záloha před N dny“ s tlačítkem,
+  které zálohu rovnou stáhne
+- při pokusu o **zavření aplikace** (nebo karty) vyvolá aplikace nativní varování
+  prohlížeče; po zrušení zavření se dole nabídne stažení zálohy (tlačítko
+  „Nepřipomínat“ připomínku vypne, zaškrtávátko je i v Nastavení)
+- automatické stažení souboru při zavírání prohlížeč neumožňuje, jde proto
+  o připomínku, ne o automatickou zálohu
+
+**Název PDF při tisku**
+- tiskový dialog prohlížeče nabízel soubor `FaktFree.pdf`; nyní se před tiskem
+  přepne titulek stránky na **číslo faktury** (např. `FA20260001`), takže se rovnou
+  nabídne `FA20260001.pdf`; po zavření dialogu se titulek vrátí zpět
+
+**Sjednocení vzhledu ikon**
+- účtenka s trhaným okrajem a fajfkou „vyřízeno“ ve dvou variantách –
+  jednobarevná (řídí se tématem) a barevná s modrým přechodem `#2563eb → #3b82f6`
+- sjednocné **ikony aplikace** pro instalaci podle této značky (dřív bílý dokument
+  se zelenou fajfkou); favicon zůstává jednobarevný kvůli světlému/tmavému tématu
+
 ## 0.2 – 2026-09-29
 
 **Opravy**

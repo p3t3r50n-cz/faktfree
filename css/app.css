@@ -250,7 +250,9 @@ textarea { resize: vertical; }
 
 .empty { padding: 28px; text-align: center; color: var(--muted); }
 
-.dialog-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.dialog-toolbar { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 12px; }
+
+.dialog-toolbar > button { margin-bottom: 12px; }
 
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; margin-bottom: 12px; }
 .stat { border: 1px solid var(--border); border-radius: 11px; padding: 10px 12px; background: var(--panel-2); }
@@ -343,7 +345,11 @@ tbody tr:hover { background: var(--panel-2); }
 /* Akce v řádku tabulky – pevné sloupce, aby tlačítka v jednotlivých řádcích
    ne„ujížděla“ (textové „Párovat“/„Zrušit vazbu“ má jinou šířku než ikony).
    Prázdný sloupec se pořád vykreslí, proto zůstává zarovnání stejné. */
-.row-actions { white-space: nowrap; }
+.row-actions {
+    display: flex;
+    gap: 5px;
+    white-space: nowrap;
+}
 .row-actions .act {
     display: inline-flex;
     align-items: center;
@@ -429,6 +435,27 @@ tbody tr:hover { background: var(--panel-2); }
 .sidebar-actions .btn { justify-content: flex-start; }
 .sidebar-foot { margin-top: auto; padding-top: 8px; }
 .sidebar-foot .btn { width: 100%; justify-content: flex-start; }
+
+/* připomínka zálohy v patičce panelu – zobrazí se jen, když je záloha stará */
+.backup-nudge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+    padding: 5px 6px 5px 10px;
+    border: 1px dashed var(--border);
+    border-radius: 9px;
+    background: var(--panel-2);
+    font-size: .78rem;
+    color: var(--muted);
+}
+.backup-nudge.urgent { border-color: var(--warn); background: var(--warn-weak); color: var(--warn); }
+.backup-nudge > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.backup-nudge .btn { width: auto; flex: 0 0 auto; justify-content: center; padding: 3px 8px; font-size: .78rem; }
+
+/* stav zálohy v Nastavení */
+.backup-state.stale { color: var(--warn); }
 
 .tree { flex: 1 1 auto; overflow: auto; min-height: 0; }
 .tree-title { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; margin-bottom: 6px; }

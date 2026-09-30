@@ -852,6 +852,21 @@ export async function exportData() {
     };
 }
 
+/** Zapamatuje si čas poslední zálohy – podle něj se připomíná další. */
+export async function markBackupDone() {
+    state.settings.lastBackupAt = new Date().toISOString();
+    await db.setMeta('settings', state.settings);
+    emit('sidebar');
+    emit('main');
+}
+
+/** Uloží obecné nastavení aplikace (např. připomínání zálohy). */
+export async function setSetting(key, value) {
+    state.settings[key] = value;
+    await db.setMeta('settings', state.settings);
+    emit('sidebar');
+}
+
 export async function importData(data) {
     if (!data || !Array.isArray(data.companies) || !data.companies.length) {
         throw new Error('Soubor neobsahuje platná data (chybí firmy).');

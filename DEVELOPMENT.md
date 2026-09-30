@@ -62,6 +62,7 @@ zachová; přechod na jinou doménu znamená novou prázdnou databázi (vyřeš�
 | `js/app.js` | start, navigace, globální akce, klávesové zkratky |
 | `js/db.js` | IndexedDB (úložiště) |
 | `js/store.js` | stav aplikace a všechny mutace |
+| `js/backup.js` | záloha dat do souboru + připomínka, když je záloha stará |
 | `js/invoice.js` | výpočty, DPH, číslování, QR platba (SPD), IBAN |
 | `js/qr.js` | vlastní QR generátor (offline, ověřen proti referenční knihovně) |
 | `js/abo.js` | parser ABO/GPC bankovních výpisů |
@@ -74,6 +75,7 @@ zachová; přechod na jinou doménu znamená novou prázdnou databázi (vyřeš�
 | `js/seed.js` | demo data – **zcela smyšlená** jména, IČO i účty (fiktivní IČO v ARES neexistují) |
 | `js/demo-abo.js` | generátor ukázkového ABO výpisu |
 | `js/views/*.js` | jednotlivé pohledy (přehled, faktura, banka, nastavení, levý panel) |
+| `brand/`, `icons/` | logo a ikony aplikace – jak je upravit a vygenerovat znovu: [brand/README.md](brand/README.md) |
 
 ## Datový model (IndexedDB `fakturace`)
 
@@ -321,3 +323,20 @@ scope, které se už nemají jak aktualizovat.
 Nastavení → *Záloha dat* → **Exportovat data** (JSON). Stejný soubor lze naimportovat
 zpět, případně i přenést na jiný počítač. Prohlížeč může data smazat (např. při vyčištění
 úložiště), proto je vhodné zapnout **trvalé úložiště** a občas exportovat zálohu.
+
+Stažení zálohy dělá vždy `downloadBackup()` z `js/backup.js` (Nastavení i připomínka
+v panelu), takže se při každém stažení zapíše `settings.lastBackupAt`.
+
+**Připomínka zálohy** stojí na dvou místech:
+
+- **panel** – dokud je záloha čerstvá, nic se nezobrazuje; po `backupWarnDays` dnech
+  (výchozí 7, nastavitelné 1–90) se v patičce panelu objeví drobný řádek „Záloha
+  před N dny“ s tlačítkem, které zálohu rovnou stáhne.
+- **zavírání aplikace** – `installCloseGuard()` v `beforeunload` vyvolá nativní varování
+  prohlížeče (vlastní text nastavit nelze). Když uživatel zavření zruší a stránka
+  zůstane viditelná, nabídne se dole lišta se stažením zálohy. Vypíná se zaškrtávátkem
+  `warnOnClose` v Nastavení.
+
+Stažení souboru při zavírání stránky prohlížeč **neumožňuje** (chybí gesto uživatele),
+automatickou zálohu do souboru proto řešit nelze – jde jen o připomínku.
+U demo dat (`settings.demo`) se nepřipomíná vůbec.

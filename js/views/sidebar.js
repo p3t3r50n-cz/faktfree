@@ -5,6 +5,7 @@ import * as store from '../store.js';
 import { esc, sv, fmtCZK } from '../util.js';
 import { invoiceTotals } from '../invoice.js';
 import { icon } from '../icons.js';
+import { backupNudgeHtml } from '../backup.js';
 
 const STATUS_DOT = { paid: 'paid', overdue: 'overdue', partial: 'partial', open: 'open' };
 
@@ -82,6 +83,7 @@ export function renderSidebar() {
         '</div>' +
 
         '<div class="sidebar-foot">' +
+        backupNudgeHtml() +
         '<button class="btn' + (store.state.view === 'settings' ? ' active' : '') + '" data-action="go" data-view="settings">' + icon('gear') + ' Nastavení</button>' +
         '</div>';
 }

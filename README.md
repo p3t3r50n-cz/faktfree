@@ -41,7 +41,7 @@ A co je na ní nejlepší? **Je Fakt Free.** 🙂
 | **Banka** | Import výpisu (ABO/GPC), párování plateb s fakturami, částečné úhrady, vratky, přehledy a fulltext. |
 | **Přehledy** | Souhrny po letech, stav úhrady (zaplaceno / částečně / po splatnosti), rychlé filtry. |
 | **Import z jiných systémů** | ABRA Flexi (XML) a ISDOC / ISDOCX. Odběratelé, položky i měrné jednotky se doplní samy. |
-| **Záloha a přenos** | Export a import všech dat do jediného souboru – snadný přenos na jiný počítač i záloha. |
+| **Záloha a přenos** | Export a import všech dat do jediného souboru – snadný přenos na jiný počítač i záloha. Když je záloha stará, aplikace to v panelu decentně připomene. |
 | **Offline a instalace** | Po prvním načtení funguje bez internetu a chová se jako nainstalovaná aplikace. |
 | **Vzhled** | Světlý a tmavý režim, deset témat a možnost přidat si vlastní téma. |
 | **Neměnné doklady** | Faktura si pamatuje údaje z okamžiku vystavení, takže se staré doklady zpětně „nepřepisují“. |
@@ -155,7 +155,7 @@ vypsané v [THIRD-PARTY.md](THIRD-PARTY.md).
 
 ## Verze
 
-Aktuální verze je **0.2**. Každé další vydání zvyšuje desetinu: 0.3, 0.4, … až 1.0.
+Aktuální verze je **0.3**. Každé další vydání zvyšuje desetinu: 0.4, 0.5, … až 1.0.
 
 ## Poděkování
 

@@ -3,9 +3,10 @@
  * Data jsou v IndexedDB, takže aplikace funguje i bez sítě.
  * ------------------------------------------------------------------------- */
 
-// Technická verze cache – zvýšit při KAŽDÉ změně JS/CSS.
-// Držíme ji oddělenou od verze aplikace (ta je v `js/appinfo.js`, např. 0.1).
-const CACHE_VERSION = '0.1.14';
+// Technická verze cache – zvýšit při KAŽDÉ změně JS/CSS (i ikon, ty se předkešují).
+// Držíme ji oddělenou od verze aplikace (ta je v `js/appinfo.js`, např. 0.3).
+// U vydání se obě čísla sejdou (aplikace 0.3 = cache 0.3.1).
+const CACHE_VERSION = '0.3.1';
 
 // Cache je vázaná na cestu, ze které aplikace běží. Kdyby na stejném serveru
 // (stejný původ) běžely dvě kopie aplikace, např. /fa/ a /faktfree/,
@@ -44,6 +45,7 @@ const ASSETS = [
     'js/db.js',
     'js/store.js',
     'js/util.js',
+    'js/backup.js',
     'js/icons.js',
     'js/import.js',
     'js/invoice.js',

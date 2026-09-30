@@ -9,6 +9,7 @@ import { renderBank, bindBank } from './views/bank.js';
 import { renderSettings, bindSettings } from './views/settings.js';
 import { confirmDialog, toast } from './ui.js';
 import { printInvoice } from './print.js';
+import { installCloseGuard, downloadBackup } from './backup.js';
 import { sv } from './util.js';
 import { icon } from './icons.js';
 import { allThemes, ensureThemeStyles, resolveTheme } from './themes.js';
@@ -96,6 +97,9 @@ document.addEventListener('click', async (e) => {
     switch (action) {
         case 'go':
             await navigate(el.dataset.view);
+            return;
+        case 'backup-now':
+            await downloadBackup();
             return;
         case 'new-invoice':
             if (store.state.view === 'invoice') await store.flushEditing();
@@ -241,6 +245,9 @@ async function boot() {
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') store.flushEditing();
     });
+
+    // připomínka zálohy při pokusu o zavření aplikace
+    installCloseGuard();
 
     // klávesové zkratky
     document.addEventListener('keydown', (e) => {
