@@ -5,6 +5,12 @@ U každé změny se zvyšuje i technická verze cache v `sw.js`.
 
 ## 0.3 - 2026-09-30
 
+**Hodinové množství**
+- u měrných jednotek `hod`, `hodin` a `h` lze zadat množství ve formátu `h:mm` (např. `5:20`)
+- množství se přepočítá na desetinné hodiny a výsledná částka se aritmeticky zaokrouhlí na celé Kč
+- formát `h:mm` se zachová i ve vytištěné faktuře
+
+
 **Připomínka zálohy**
 - dokud je záloha čerstvá, nic se nepřipomíná; po 7 dnech (nastavitelné 1–90) se
   v patičce levého panelu objeví drobný řádek „Záloha před N dny“ s tlačítkem,

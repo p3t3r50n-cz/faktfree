@@ -8,7 +8,7 @@ export const DEFAULT_UNITS = ['ks', 'hod', 'den', 'měsíc', 'km', 'paušál', '
 
 /* --------------------------- částky a DPH -------------------------------- */
 
-function isHourUnit(unit) {
+export function isHourUnit(unit) {
     return ['h', 'hod', 'hodin', 'hour', 'hours'].includes(sv(unit).trim().toLowerCase());
 }
 

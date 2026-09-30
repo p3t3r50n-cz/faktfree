@@ -2,11 +2,13 @@
  * Tisk faktury – rozložení podle vzoru (ABRA Flexi).
  * ------------------------------------------------------------------------- */
 import { esc, sv, num, fmtCZK, fmtDate } from './util.js';
-import { totals, rowTotal, buildSpd, ibanFromAccount, STATUS_LABEL, statusOf } from './invoice.js';
+import { totals, rowTotal, buildSpd, ibanFromAccount, STATUS_LABEL, statusOf, isHourUnit } from './invoice.js';
 import { qrSvg } from './qr.js';
 import { APP_NAME, APP_URL, APP_CREDIT } from './appinfo.js';
 
-const qty = (v) => {
+const qty = (v, unit) => {
+    const value = sv(v).trim();
+    if (isHourUnit(unit) && /^(\d+):([0-5]\d)$/.test(value)) return value;
     const n = num(v);
     return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 };
@@ -97,7 +99,7 @@ export function invoiceHtml(invoice, company, paid) {
         (rows.length
             ? rows.map((r) => '<tr>' +
                 '<td>' + esc(r.name) + '</td>' +
-                '<td class="num">' + esc(qty(r.quantity)) + '</td>' +
+                '<td class="num">' + esc(qty(r.quantity, r.unit)) + '</td>' +
                 '<td class="c">' + esc(sv(r.unit)) + '</td>' +
                 '<td class="num">' + (num(r.price) ? fmtCZK(r.price) : '') + '</td>' +
                 (hasDiscount ? '<td class="num">' + (num(r.discount) ? qty(r.discount) + ' %' : '') + '</td>' : '') +
