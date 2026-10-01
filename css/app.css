@@ -47,6 +47,8 @@ a { color: var(--primary); }
 .small { font-size: .85rem; }
 .grow { flex: 1 1 auto; }
 .hidden { display: none !important; }
+/* Autorovo `.btn { display: ... }` přebíjí UA pravidlo pro [hidden] – obnovíme ho globálně. */
+[hidden] { display: none !important; }
 .num { text-align: right; }
 .c { text-align: center; }
 .overdue-text { color: var(--danger); }
@@ -604,6 +606,8 @@ tbody tr:hover { background: var(--panel-2); }
     max-width: calc(100vw - 32px);
 }
 .updatebar[hidden] { display: none !important; }
+/* když je na obrazovce víc lišt (aktualizace / záloha), posuňme je nad sebe */
+.updatebar.stack { bottom: 74px; }
 
 .noscript { padding: 24px; text-align: center; }
 

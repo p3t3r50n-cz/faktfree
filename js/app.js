@@ -6,14 +6,85 @@ import { renderSidebar } from './views/sidebar.js';
 import { renderOverview, bindOverview } from './views/overview.js';
 import { renderInvoice, bindInvoice, refreshEditorChrome } from './views/invoice.js';
 import { renderBank, bindBank } from './views/bank.js';
-import { renderSettings, bindSettings } from './views/settings.js';
-import { confirmDialog, toast } from './ui.js';
+import { renderSettings, bindSettings, syncThemeSelection } from './views/settings.js';
+import { confirmDialog, alertDialog, toast } from './ui.js';
 import { printInvoice } from './print.js';
 import { installCloseGuard, downloadBackup } from './backup.js';
 import { sv } from './util.js';
 import { icon } from './icons.js';
 import { allThemes, ensureThemeStyles, resolveTheme } from './themes.js';
 import { APP_NAME, APP_VERSION } from './appinfo.js';
+
+/* --------------------------- instalace PWA ------------------------------ */
+// Registrujeme hned při načtení modulu (ne až v boot()), aby se událost neminula.
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.deferredInstallPrompt = e;
+    document.dispatchEvent(new CustomEvent('faktfree:installchange'));
+});
+
+window.addEventListener('appinstalled', () => {
+    window.pwaInstalled = true;
+    window.deferredInstallPrompt = null;
+    document.dispatchEvent(new CustomEvent('faktfree:installchange'));
+});
+
+/* ------------------ nabídka instalace (spodní lišta) -------------------- */
+
+let installBar = null;
+let booted = false;
+
+/** Zobrazí/skryje lištu podle stavu: instalovatelné jedním kliknutím, ne instalováno, ne odmítnuto. */
+function updateInstallBar() {
+    const installed = window.pwaInstalled || window.matchMedia('(display-mode: standalone)').matches;
+    if (installed) return hideInstallBar();
+    if (installBar && installBar.isConnected) return;
+    if (!booted) return;
+    if (!window.deferredInstallPrompt) return;
+    if ((store.state.settings || {}).showInstallHint === false) return;
+    showInstallBar();
+}
+
+function showInstallBar() {
+    installBar = document.createElement('div');
+    installBar.className = 'updatebar' + (document.querySelector('.updatebar') ? ' stack' : '');
+    installBar.innerHTML =
+        '<span>' + icon('box-arrow-in-down') + ' FaktFree si můžete <strong>nainstalovat</strong> jako aplikaci.</span>' +
+        '<button class="btn primary small" data-install-now>Nainstalovat</button>' +
+        '<button class="icon-btn" data-install-dismiss aria-label="Zavřít" title="Zavřít">' + icon('x-lg') + '</button>';
+    document.body.appendChild(installBar);
+
+    installBar.querySelector('[data-install-now]').addEventListener('click', async () => {
+        const prompt = window.deferredInstallPrompt;
+        if (!prompt) return hideInstallBar();
+        prompt.prompt();
+        await prompt.userChoice.catch(() => null);
+        window.deferredInstallPrompt = null;
+        hideInstallBar();
+        document.dispatchEvent(new CustomEvent('faktfree:installchange'));
+    });
+
+    installBar.querySelector('[data-install-dismiss]').addEventListener('click', async () => {
+        hideInstallBar();
+        // ať se lišta už neukazuje (i později, i po reloadu)
+        await store.setSetting('showInstallHint', false);
+        const checkbox = document.querySelector('[data-setting="showInstallHint"]');
+        if (checkbox) checkbox.checked = false;
+        await alertDialog('Instalace aplikace',
+            'Aplikaci můžete kdykoli nainstalovat v Nastavení → sekce Aplikace, tlačítkem „Nainstalovat aplikaci“ ' +
+            '(případně z nabídky prohlížeče nebo ikonou v adresním pruhu). Tuto nabídku už znovu neukážeme – ' +
+            'připomenutí lze kdykoli znovu zapnout v Nastavení.');
+    });
+}
+
+function hideInstallBar() {
+    if (installBar) {
+        installBar.remove();
+        installBar = null;
+    }
+}
+
+document.addEventListener('faktfree:installchange', updateInstallBar);
 
 /* ------------------------------ téma ------------------------------------ */
 
@@ -220,7 +291,12 @@ async function boot() {
     bindOverview(main);
 
     store.subscribe((kind) => {
-        if (!kind || kind === 'all') applyTheme();
+        if (!kind || kind === 'all' || kind === 'theme') applyTheme();
+        if (kind === 'theme') {
+            // přepnutí tématu jen přebarví – bez překreslení celého Nastavení (držíme scroll)
+            syncThemeSelection();
+            return;
+        }
         if (kind === 'sidebar' || kind === 'all' || !kind) renderSidebar();
         if (kind === 'main' || kind === 'all' || !kind) renderMain();
         if (kind === 'editor') refreshEditorChrome();
@@ -239,6 +315,10 @@ async function boot() {
 
     applyTheme();
     renderAll();
+
+    // spodní lišta s nabídkou instalace (jen pokud ji prohlížeč umí jedním kliknutím)
+    booted = true;
+    updateInstallBar();
 
     // při odchodu ze stránky uložit rozepsanou fakturu
     window.addEventListener('pagehide', () => { store.flushEditing(); });
@@ -264,14 +344,6 @@ async function boot() {
             e.preventDefault();
             document.querySelector('[data-action="new-invoice"]').click();
         }
-    });
-
-    // instalace PWA
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        window.deferredInstallPrompt = e;
-        const btn = document.querySelector('[data-action="install-pwa"]');
-        if (btn) btn.hidden = false;
     });
 
     // service worker (offline režim + aktualizace aplikace)

@@ -3,6 +3,26 @@
 Verze se zvyšují po desetinách (0.1 → 0.2 → 0.3 …), viz [README](README.md#verze).
 U každé změny se zvyšuje i technická verze cache v `sw.js`.
 
+## 0.3 – 2026-10-01
+
+**Instalace jako aplikace (PWA)**
+- tlačítko **Nainstalovat aplikaci** v Nastavení – je zvýrazněné a zobrazuje
+  se vždy (kromě stavu, kdy již aplikace běží jako nainstalovaná)
+- instalaci aplikace nově nabízí i spodní lišta (podobně jako nabídku aktualizace);
+  křížkem ji lze odmítnout a připomenutí znovu zapnout přepínačem v Nastavení
+- událost `beforeinstallprompt` se zachytává hned při startu – dřív se mohla minout,
+  takže tlačítko na desktopu nic nedělalo
+- v prohlížečích, které instalaci nepodporují (Firefox, Safari…), tlačítko po kliknutí
+  vysvětlí, že instalace je možná jen v prohlížečích založených na Chromiu
+
+**Vzhled**
+- přepnutí tématu už nezvedá stránku nahoru – Nastavení zůstává otevřené na stejné
+  pozici (dřív se kvůli překreslení celé stránky scroll vrátil na začátek)
+
+**Opravy**
+- atribut `hidden` teď funguje i na tlačítkách (`.btn` dřív přebíjel výchozí pravidlo
+  pro `[hidden]`, takže se skrytá tlačítka zobrazovala)
+
 ## 0.3 - 2026-09-30
 
 **Hodinové množství**

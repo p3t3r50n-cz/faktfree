@@ -818,7 +818,8 @@ function findAutoMatch(payment) {
 export async function setTheme(themeId) {
     state.settings.theme = themeId;
     await db.setMeta('settings', state.settings);
-    emit('all');
+    // jen téma – nepřekreslujeme celou stránku (držíme scroll i pozici v Nastavení)
+    emit('theme');
 }
 
 export async function addCustomTheme(theme) {

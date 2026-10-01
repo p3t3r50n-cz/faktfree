@@ -4,7 +4,7 @@
 import * as store from '../store.js';
 import * as db from '../db.js';
 import { esc, sv, num, debounce, todayStr } from '../util.js';
-import { confirmDialog, toast, openModal } from '../ui.js';
+import { confirmDialog, alertDialog, toast, openModal } from '../ui.js';
 import { buildDemoAbo } from '../demo-abo.js';
 import { downloadBackup, backupText, backupWarnDays, backupStale } from '../backup.js';
 import { allThemes, THEME_DEFAULTS, normalizeTheme, resolveTheme } from '../themes.js';
@@ -127,8 +127,11 @@ export function renderSettings(host) {
         '<p class="muted small" data-appinfo>…</p>' +
         '<div class="dialog-toolbar">' +
         '<button class="btn" data-action="check-update">' + icon('arrow-clockwise') + ' Zkontrolovat aktualizace</button>' +
-        '<button class="btn" data-action="install-pwa" hidden>' + icon('box-arrow-in-down') + ' Nainstalovat aplikaci</button>' +
+        '<button class="btn primary" data-action="install-pwa">' + icon('box-arrow-in-down') + ' Nainstalovat aplikaci</button>' +
         '</div>' +
+        '<p class="muted small" data-install-hint hidden></p>' +
+        '<label class="inline checkbox-field" data-install-toggle><input type="checkbox" data-setting="showInstallHint"' +
+        (store.state.settings.showInstallHint === false ? '' : ' checked') + '> Zobrazovat nabídku instalace</label>' +
         '<p class="muted small">Aktualizace se stahují automaticky. Jakmile je k dispozici nová verze, ' +
         'zobrazí se dole lišta s tlačítkem „Aktualizovat“ — stačí kliknout, nic se nepřeinstalovává.</p>' +
         '</div>';
@@ -174,6 +177,16 @@ function themeCards() {
                 : '') +
             '</div>';
     }).join('');
+}
+
+/** Přepne zvýraznění karty aktivního tématu bez překreslení celé stránky (drží scroll). */
+export function syncThemeSelection(host) {
+    host = host || document.getElementById('main');
+    if (!host) return;
+    const mode = store.state.settings.theme || 'auto';
+    host.querySelectorAll('.theme-card').forEach((card) => {
+        card.classList.toggle('active', card.dataset.themeId === mode);
+    });
 }
 
 function themePreview(item) {
@@ -237,8 +250,36 @@ async function updateAppInfo(host) {
         versionRetryDone = true;
         setTimeout(() => updateAppInfo(host), 1200);
     }
-    const install = host.querySelector('[data-action="install-pwa"]');
-    if (install && window.deferredInstallPrompt) install.hidden = false;
+    updateInstall(host);
+}
+
+/** Je prohlížeč založený na Chromiu? (jinde instalaci PWA jedním kliknutím spustit nelze) */
+function isChromiumBrowser() {
+    return typeof window.chrome !== 'undefined' || 'userAgentData' in navigator;
+}
+
+/** Stav tlačítka „Nainstalovat aplikaci“, přepínače nabídky a nápověd v sekci Aplikace. */
+function updateInstall(host) {
+    const btn = host.querySelector('[data-action="install-pwa"]');
+    if (!btn) return;
+    const hint = host.querySelector('[data-install-hint]');
+    const toggle = host.querySelector('[data-install-toggle]');
+    const standalone = window.matchMedia('(display-mode: standalone)').matches;
+    const installed = standalone || window.pwaInstalled;
+    const chromium = isChromiumBrowser();
+
+    btn.hidden = installed;
+    if (toggle) toggle.hidden = installed || !chromium;
+
+    if (!hint) return;
+    if (installed || !chromium || window.deferredInstallPrompt) {
+        hint.hidden = true;
+        hint.textContent = '';
+    } else {
+        hint.hidden = false;
+        hint.textContent = 'Prohlížeč teď instalaci jedním kliknutím nenabízí. Otevřete nabídku prohlížeče ' +
+            'a zvolte „Instalovat aplikaci“ (případně ikonu instalace v adresním pruhu).';
+    }
 }
 
 /* --------------------------- obsluha ------------------------------------ */
@@ -246,6 +287,9 @@ async function updateAppInfo(host) {
 export function bindSettings(host) {
     if (host.dataset.settingsBound) return;
     host.dataset.settingsBound = '1';
+
+    // stav tlačítka instalace se může změnit, i když je Nastavení otevřené
+    document.addEventListener('faktfree:installchange', () => updateInstall(host));
 
     const save = debounce(() => {
         const company = store.activeCompany();
@@ -285,6 +329,8 @@ export function bindSettings(host) {
         if (!setting) return;
         if (e.target.type === 'checkbox') store.setSetting(setting, e.target.checked);
         else store.setSetting(setting, e.target.value.trim() === '' ? '' : num(e.target.value));
+        // přepínač nabídky instalace rovnou promítneme do spodní lišty
+        if (setting === 'showInstallHint') document.dispatchEvent(new CustomEvent('faktfree:installchange'));
     });
 
     host.addEventListener('click', async (e) => {
@@ -471,10 +517,23 @@ export function bindSettings(host) {
             return;
         }
 
-        if (action === 'install-pwa' && window.deferredInstallPrompt) {
-            window.deferredInstallPrompt.prompt();
-            window.deferredInstallPrompt = null;
-            el.hidden = true;
+        if (action === 'install-pwa') {
+            const prompt = window.deferredInstallPrompt;
+            if (prompt) {
+                prompt.prompt();
+                const choice = await prompt.userChoice.catch(() => null);
+                window.deferredInstallPrompt = null;
+                updateInstall(host);
+                if (!choice || choice.outcome !== 'accepted') toast('Instalace nebyla dokončena.', 'info');
+            } else if (!isChromiumBrowser()) {
+                await alertDialog('Instalace aplikace',
+                    'Instalace jako aplikace je možná jen v prohlížečích založených na Chromiu ' +
+                    '(Chrome, Chromium, Brave, Edge…). V tomto prohlížeči ji spustit nelze.');
+            } else {
+                toast('Instalaci spusťte z nabídky prohlížeče → „Instalovat aplikaci“, případně ikonou v adresním pruhu.',
+                    'info', 6000);
+            }
+            return;
         }
 
         if (action === 'check-update') {
